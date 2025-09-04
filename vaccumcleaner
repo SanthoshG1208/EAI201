@@ -1,0 +1,61 @@
+def start():
+    print("started")
+    print("States: 1. Solid  2. Liquid")
+    states = int(input("Enter the states: "))
+    if states == 1:
+        solid()
+    elif states == 2:
+        liquid()
+    else:
+        print("Invalid choice, please try again.")
+
+def solid():
+    print("Solid types: 1. Rock  2. Dust")
+    solid_type = int(input("Enter the solid type: "))
+    if solid_type == 1:
+        print("The shape has been changed to rectangle")
+    elif solid_type == 2:
+        print("It is going to take a small particle")
+    else:
+        print("Invalid choice, please try again.")
+
+def liquid():
+    print("It is going to take a liquid")
+
+def stop():
+    print("Stopped")
+
+def left():
+    print("The direction has been changed to left")
+
+def right():
+    print("The direction has been changed to right")
+
+def turnoff():
+    print("THANK YOU!!")
+
+def main():
+    while True:
+        print('''\n\t1. Start
+    2. Stop
+    3. Left
+    4. Right
+    5. Turn off''')
+        
+        choice = int(input("Enter the number: "))
+        
+        if choice == 1:
+            start()
+        elif choice == 2:
+            stop()
+        elif choice == 3:
+            left()
+        elif choice == 4:
+            right()
+        elif choice == 5:
+            turnoff()
+            break  # Exit the loop and end the program
+        else:
+            print("Invalid choice, please try again.")
+
+main()

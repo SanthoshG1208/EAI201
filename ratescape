@@ -1,0 +1,179 @@
+import math
+import heapq
+from collections import deque
+
+class WaterPipeline:
+    def __init__(self, nodes):
+        self.nodes = nodes
+        self.network = [[] for _ in range(nodes)]
+        self.coords = [(0, 0)] * nodes
+
+    def connect(self, a, b, w):
+        self.network[a].append((b, w))
+        self.network[b].append((a, w))
+
+    def set_position(self, node, x, y):
+        self.coords[node] = (x, y)
+
+    def heuristic(self, a, b):
+        x1, y1 = self.coords[a]
+        x2, y2 = self.coords[b]
+        return math.hypot(x1 - x2, y1 - y2)
+
+    
+    def depth_first(self, start, goal):
+        visited = [False] * self.nodes
+        route, explored = [], 0
+        found = False
+
+        def explore(u):
+            nonlocal found, explored
+            if found:
+                return
+            visited[u] = True
+            explored += 1
+            route.append(u)
+            if u == goal:
+                found = True
+                return
+            for v, _ in self.network[u]:
+                if not visited[v]:
+                    explore(v)
+                    if found:
+                        return
+            if not found:
+                route.pop()
+
+        explore(start)
+        return route, explored
+
+
+    def breadth_first(self, start, goal):
+        visited = [False] * self.nodes
+        parent = [-1] * self.nodes
+        q = deque([start])
+        visited[start] = True
+        explored = 1
+
+        while q:
+            u = q.popleft()
+            if u == goal:
+                break
+            for v, _ in self.network[u]:
+                if not visited[v]:
+                    visited[v] = True
+                    parent[v] = u
+                    q.append(v)
+                    explored += 1
+
+        if not visited[goal]:
+            return [], explored
+
+        route, cur = [], goal
+        while cur != -1:
+            route.append(cur)
+            cur = parent[cur]
+        return route[::-1], explored
+    
+    def uniform_cost(self, start, goal):
+        pq = [(0, start, [])]
+        seen = set()
+        explored = 0
+
+        while pq:
+            cost, u, path = heapq.heappop(pq)
+            if u in seen:
+                continue
+            seen.add(u)
+            explored += 1
+            path = path + [u]
+
+            if u == goal:
+                return path, cost, explored
+
+            for v, w in self.network[u]:
+                if v not in seen:
+                    heapq.heappush(pq, (cost + w, v, path))
+
+        return [], math.inf, explored
+
+
+    def a_star(self, start, goal):
+        dist = [math.inf] * self.nodes
+        parent = [-1] * self.nodes
+        dist[start] = 0
+        pq = [(self.heuristic(start, goal), 0, start)]
+        explored = 0
+        closed = [False] * self.nodes
+
+        while pq:
+            est, d, u = heapq.heappop(pq)
+            if closed[u]:
+                continue
+            closed[u] = True
+            explored += 1
+            if u == goal:
+                break
+            for v, w in self.network[u]:
+                new_d = d + w
+                if new_d < dist[v]:
+                    dist[v] = new_d
+                    parent[v] = u
+                    f = new_d + self.heuristic(v, goal)
+                    heapq.heappush(pq, (f, new_d, v))
+
+        if dist[goal] == math.inf:
+            return [], math.inf, explored
+
+        route, cur = [], goal
+        while cur != -1:
+            route.append(cur)
+            cur = parent[cur]
+        return route[::-1], dist[goal], explored
+
+
+def run_program():
+    n, m = map(int, input("Enter number of junctions and pipes: ").split())
+    system = WaterPipeline(n)
+
+    print("Enter pipe connections (u v cost):")
+    for _ in range(m):
+        u, v, w = map(int, input().split())
+        system.connect(u, v, w)
+
+    print("Enter coordinates for each junction:")
+    for i in range(n):
+        x, y = map(float, input().split())
+        system.set_position(i, x, y)
+
+    start, goal = map(int, input("Enter start and goal junction: ").split())
+
+    print("\n--- Depth First Search ---")
+    path, explored = system.depth_first(start, goal)
+    cost = sum(next(w for v, w in system.network[path[i]] if v == path[i+1]) for i in range(len(path)-1)) if path else math.inf
+    print("Path:", path)
+    print("Cost:", cost)
+    print("Visited:", explored)
+
+    print("\n--- Breadth First Search ---")
+    path, explored = system.breadth_first(start, goal)
+    cost = sum(next(w for v, w in system.network[path[i]] if v == path[i+1]) for i in range(len(path)-1)) if path else math.inf
+    print("Path:", path)
+    print("Cost:", cost)
+    print("Visited:", explored)
+
+    print("\n--- Uniform Cost Search ---")
+    path, cost, explored = system.uniform_cost(start, goal)
+    print("Path:", path)
+    print("Cost:", cost)
+    print("Visited:", explored)
+
+    print("\n--- A* Search ---")
+    path, cost, explored = system.a_star(start, goal)
+    print("Path:", path)
+    print("Cost:", cost)
+    print("Visited:", explored)
+
+
+if __name__ == "__main__":
+    run_program()

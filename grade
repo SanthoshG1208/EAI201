@@ -1,0 +1,30 @@
+def grade_student(subject_marks):
+    grades = {}
+    for subject, mark in subject_marks.items():
+        if not (0 <= mark <= 100):
+            grades[subject] = "Invalid Mark"
+        elif mark >= 90:
+            grades[subject] = 'A'
+        elif mark >= 75:
+            grades[subject] = 'B'
+        elif mark >= 60:
+            grades[subject] = 'C'
+        elif mark >= 50:
+            grades[subject] = 'D'
+        else:
+            grades[subject] = 'F'
+    return grades
+
+subject_marks = {}
+n = int(input("Enter number of subjects: "))
+
+for i in range(n):
+    subject = input(f"Enter subject {i+1} name: ")
+    mark = int(input(f"Enter marks for {subject}: "))
+    subject_marks[subject] = mark
+
+grades = grade_student(subject_marks)
+
+print("\n--- Results ---")
+for subject, grade in grades.items():
+    print(f"{subject}: {grade}")

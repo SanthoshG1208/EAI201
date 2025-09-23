@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NaviCU Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-bottom: 15px; }
+
+    /* Chatbox layout */
+    #chatbox {
+      display: flex;
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    /* Chat messages */
+    #chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+    }
+    .bot {
+      align-self: flex-start;
+      background: #e0ffe0;
+      color: #006600;
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin: 4px 0;
+      max-width: 80%;
+    }
+    .user {
+      align-self: flex-end;
+      background: #cce5ff;
+      color: #004080;
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin: 4px 0;
+      max-width: 80%;
+    }
+
+    /* Map on the right */
+    #chat-map {
+      flex: 1;
+      border-left: 1px solid #ccc;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Controls */
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .controls label {
+      font-weight: bold;
+    }
+    .controls select, .controls button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>Welcome to NaviCU </h2>
+
+  <!-- Chat + Map -->
+  <div id="chatbox">
+    <div id="chat-messages">
+      <div class="bot">Hello! Please select source and destination.</div>
+    </div>
+    <div id="chat-map">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <label for="source">Source:</label>
+    <select id="source"></select>
+
+    <label for="destination">Destination:</label>
+    <select id="destination"></select>
+
+    <button onclick="sendMessage()">Find Route</button>
+    <button onclick="clearChat()">Clear Chat</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const locations = [
+      "Gate 1", "Gate 2", "Admin block 1", "Admin block 2",
+      "Parents stay area", "Food court",
+      "Hostel-1", "Staff quarters", "Sport area"
+    ];
+
+    const srcSelect = document.getElementById("source");
+    const dstSelect = document.getElementById("destination");
+
+    // Fill dropdowns
+    locations.forEach(loc => {
+      const opt1 = document.createElement("option");
+      opt1.value = loc; opt1.textContent = loc;
+      srcSelect.appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.value = loc; opt2.textContent = loc;
+      dstSelect.appendChild(opt2);
+    });
+
+    // Initialize map
+    const map = L.map("map", { crs: L.CRS.Simple, minZoom: -1 });
+    const bounds = [[0,0], [1000,1000]]; // adjust to image size
+    L.imageOverlay("/static/campus_map.png", bounds).addTo(map);
+    map.fitBounds(bounds);
+
+    let currentLayer = null;
+
+    async function sendMessage() {
+      const source = srcSelect.value;
+      const destination = dstSelect.value;
+
+      const chatbox = document.getElementById("chat-messages");
+      chatbox.innerHTML += `<div class="user">From ${source} to ${destination}</div>`;
+
+      try {
+        const response = await fetch("/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source, destination })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          chatbox.innerHTML += `<div class="bot">⚠ ${data.error}</div>`;
+        } else {
+          chatbox.innerHTML += `<div class="bot">Path: ${data.path.join(" → ")}</div>`;
+          chatbox.innerHTML += `<div class="bot">Distance: ${data.distance} meters</div>`;
+
+          // Remove old path
+          if (currentLayer) map.removeLayer(currentLayer);
+          currentLayer = L.layerGroup().addTo(map);
+
+          // Plot route
+          const adjustedCoords = data.coords.map(pt => [pt[0], pt[1]]);
+          L.polyline(adjustedCoords, { color: "blue", weight: 4 }).addTo(currentLayer);
+
+          // Mark nodes with permanent labels
+          adjustedCoords.forEach((pt, i) => {
+            L.circleMarker(pt, { radius: 5, color: "red" })
+              .bindTooltip(data.path[i], { permanent: true, direction: "right" })
+              .addTo(currentLayer);
+          });
+
+          map.fitBounds(L.polyline(adjustedCoords).getBounds());
+        }
+      } catch (err) {
+        chatbox.innerHTML += `<div class="bot">⚠ Error: Cannot connect to backend.</div>`;
+      }
+
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function clearChat() {
+      const chatbox = document.getElementById("chat-messages");
+      chatbox.innerHTML = '<div class="bot">Hello! Please select source and destination.</div>';
+    }
+  </script>
+</body>
+</html>

@@ -73,7 +73,7 @@
 
     @app.route("/")
     def home():
-        return render_template("ai2.html")
+        return render_template("index.html")
 
     @app.route("/route", methods=["POST"])
     def find_route():

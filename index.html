@@ -127,7 +127,7 @@
     // Initialize map
     const map = L.map("map", { crs: L.CRS.Simple, minZoom: -1 });
     const bounds = [[0,0], [1000,1000]]; // adjust to image size
-    L.imageOverlay("/static/campus_map.png", bounds).addTo(map);
+    L.imageOverlay("campus_map.png", bounds).addTo(map);
     map.fitBounds(bounds);
 
     let currentLayer = null;
